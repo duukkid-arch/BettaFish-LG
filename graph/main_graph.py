@@ -4,6 +4,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from .state import OverallState
 from .supervisor import supervisor_node, route_to_next
 from agents.query.graph import query_agent_node
+from agents.insight.graph import insight_agent_node
 
 
 def _stub_agent(name: str):
@@ -26,9 +27,10 @@ def build_graph(checkpoint_path: str = "checkpoints.db"):
     g = StateGraph(OverallState)
 
     g.add_node("supervisor", supervisor_node)
-    g.add_node("query", query_agent_node)  # ← real subgraph now
-    for name in ["media", "insight", "devil_advocate", "report"]:
-        g.add_node(name, _stub_agent(name))  # ← others still stub
+    g.add_node("query", query_agent_node)
+    g.add_node("insight", insight_agent_node)  # ← real subgraph now
+    for name in ["media", "devil_advocate", "report"]:
+        g.add_node(name, _stub_agent(name))
 
     g.add_edge(START, "supervisor")
     g.add_conditional_edges(
