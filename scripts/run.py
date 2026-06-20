@@ -42,6 +42,7 @@ def main(topic: str, session: str):
     }
 
     total_tokens = 0
+    final_report = None
     for event in graph.stream(initial_state, config=config):
         for node_name, payload in event.items():
             console.print(f"\n[bold yellow]→ {node_name}[/]")
@@ -52,11 +53,20 @@ def main(topic: str, session: str):
                 console.print(f"    {r['content']}")
                 if r.get("sources"):
                     console.print(f"    [dim]sources: {len(r['sources'])} URLs[/]")
+                console.print(f"    [dim]confidence: {r.get('confidence', '?')}[/]")
             if payload.get("next_speaker"):
                 console.print(f"  [dim]→ next:[/] {payload['next_speaker']}")
+            if payload.get("final_report"):
+                final_report = payload["final_report"]
             total_tokens += payload.get("total_tokens", 0)
 
     console.print(f"\n[bold green]✓ Done.[/] Total tokens (rough): {total_tokens}")
+    if final_report:
+        console.print(Panel.fit(
+            "[bold green]Report generated.[/]\n"
+            "Check the [cyan]reports/[/] folder for the Markdown file.",
+            border_style="green",
+        ))
 
 
 if __name__ == "__main__":

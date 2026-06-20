@@ -5,6 +5,8 @@ from .state import OverallState
 from .supervisor import supervisor_node, route_to_next
 from agents.query.graph import query_agent_node
 from agents.insight.graph import insight_agent_node
+from agents.media.graph import media_agent_node
+from agents.report.graph import report_agent_node
 
 
 def _stub_agent(name: str):
@@ -28,9 +30,10 @@ def build_graph(checkpoint_path: str = "checkpoints.db"):
 
     g.add_node("supervisor", supervisor_node)
     g.add_node("query", query_agent_node)
-    g.add_node("insight", insight_agent_node)  # ← real subgraph now
-    for name in ["media", "devil_advocate", "report"]:
-        g.add_node(name, _stub_agent(name))
+    g.add_node("insight", insight_agent_node)
+    g.add_node("media", media_agent_node)        # ← real now
+    g.add_node("devil_advocate", _stub_agent("devil_advocate"))  # ← still stub (Day 5)
+    g.add_node("report", report_agent_node)      # ← real now
 
     g.add_edge(START, "supervisor")
     g.add_conditional_edges(
