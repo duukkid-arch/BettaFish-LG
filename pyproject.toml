@@ -1,0 +1,20 @@
+[project]
+name = "bettafish-lg"
+version = "0.1.0"
+description = "LangGraph refactor of BettaFish multi-agent sentiment analysis"
+requires-python = ">=3.10"
+authors = [{name = "Sun Yili"}]
+dependencies = [
+    "langgraph>=0.2.50",
+    "langchain>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langgraph-checkpoint-sqlite>=2.0.0",
+    "dashscope>=1.20.0",
+    "tavily-python>=0.5.0",
+    "python-dotenv>=1.0.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["graph*", "agents*", "memory*", "tools*"]
