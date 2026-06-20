@@ -48,8 +48,10 @@ def main(topic: str, session: str):
             if payload.get("host_directive"):
                 console.print(f"  [dim cyan]directive:[/] {payload['host_directive']}")
             for r in payload.get("agent_results", []):
-                content_preview = r["content"][:200]
-                console.print(f"  [dim]{r['agent_name']}:[/] {content_preview}")
+                console.print(f"  [bold]{r['agent_name']}[/]:")
+                console.print(f"    {r['content']}")
+                if r.get("sources"):
+                    console.print(f"    [dim]sources: {len(r['sources'])} URLs[/]")
             if payload.get("next_speaker"):
                 console.print(f"  [dim]→ next:[/] {payload['next_speaker']}")
             total_tokens += payload.get("total_tokens", 0)

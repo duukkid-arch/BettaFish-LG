@@ -3,6 +3,7 @@ from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import InMemorySaver
 from .state import OverallState
 from .supervisor import supervisor_node, route_to_next
+from agents.query.graph import query_agent_node
 
 
 def _stub_agent(name: str):
@@ -25,8 +26,9 @@ def build_graph(checkpoint_path: str = "checkpoints.db"):
     g = StateGraph(OverallState)
 
     g.add_node("supervisor", supervisor_node)
-    for name in ["query", "media", "insight", "devil_advocate", "report"]:
-        g.add_node(name, _stub_agent(name))
+    g.add_node("query", query_agent_node)  # ← real subgraph now
+    for name in ["media", "insight", "devil_advocate", "report"]:
+        g.add_node(name, _stub_agent(name))  # ← others still stub
 
     g.add_edge(START, "supervisor")
     g.add_conditional_edges(
@@ -45,6 +47,5 @@ def build_graph(checkpoint_path: str = "checkpoints.db"):
         g.add_edge(agent, "supervisor")
     g.add_edge("report", END)
 
-    # Day 1: use in-memory checkpointer. SQLite persistence added in Phase 3.
     checkpointer = InMemorySaver()
     return g.compile(checkpointer=checkpointer)
