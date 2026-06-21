@@ -12,3 +12,5 @@ logs/
 .langgraph/
 .idea/
 .vscode/
+reports/*.md
+!reports/.gitkeep
