@@ -3,15 +3,16 @@ import json
 from typing import Literal
 from langchain_core.messages import SystemMessage
 from tools.llm import get_llm
+from memory.sqlite_memory import get_latest_report
 from .state import OverallState
 
-MAX_ROUNDS = 5  # bumped from 4 to give devil_advocate a slot
+MAX_ROUNDS = 5
 
 DIRECTIVE_PROMPT = """You are the moderator of a multi-agent sentiment analysis debate.
 
 Topic: {topic}
 Round: {round}/{max_rounds}
-Historical context: {history}
+Historical context (from prior runs of this topic): {history}
 
 Agents who have already spoken: {spoken_agents}
 
@@ -23,6 +24,7 @@ Routing rules:
 2. By round 3, if ANY of query/insight has spoken, you MUST call devil_advocate to surface counter-evidence BEFORE report.
 3. Only route to "report" when devil_advocate has had its turn OR round >= {max_rounds}.
 4. Don't call the same agent twice in a row.
+5. If historical context exists, the directive should reference what to verify vs. last time.
 
 Choose the next agent from: query, media, insight, devil_advocate, report
 
@@ -34,9 +36,29 @@ Output STRICT JSON only, no markdown:
 def supervisor_node(state: OverallState) -> dict:
     round_num = state["debate_round"]
 
+    # ── On the very first round, inject historical context if available ──
+    extra_updates = {}
+    if round_num == 0 and not state.get("historical_context"):
+        prior = get_latest_report(state["topic"], state.get("session_id"))
+        if prior:
+            summary = prior.get("summary") or "(no summary available)"
+            history_str = (
+                f"Last analyzed on {prior['created_at']}. "
+                f"Previous conclusion: {summary}"
+            )
+            extra_updates["historical_context"] = history_str
+
+    # Effective history for this round (just-injected OR pre-existing)
+    effective_history = (
+        extra_updates.get("historical_context")
+        or state.get("historical_context")
+        or "(no prior runs)"
+    )
+
     # Hard cap
     if round_num >= MAX_ROUNDS:
         return {
+            **extra_updates,
             "next_speaker": "report",
             "host_directive": "Synthesize all findings, including counter-arguments, into the final report.",
             "debate_round": round_num + 1,
@@ -55,7 +77,7 @@ def supervisor_node(state: OverallState) -> dict:
         topic=state["topic"],
         round=round_num,
         max_rounds=MAX_ROUNDS,
-        history=state.get("historical_context") or "(none)",
+        history=effective_history,
         spoken_agents=", ".join(spoken_agents) or "(none yet)",
         recent=recent,
     )
@@ -80,8 +102,7 @@ def supervisor_node(state: OverallState) -> dict:
     if next_speaker not in valid:
         next_speaker = "report"
 
-    # Hard safety rule: if round >= 3 and devil_advocate hasn't spoken yet,
-    # AND we're trying to go to report, force devil_advocate first.
+    # Hard constraint: enforce devil_advocate before report
     if (round_num >= 3
         and "devil_advocate" not in spoken_agents
         and next_speaker == "report"):
@@ -89,6 +110,7 @@ def supervisor_node(state: OverallState) -> dict:
         directive = "Surface counter-evidence against the strongest claims made so far."
 
     return {
+        **extra_updates,
         "host_directive": directive,
         "next_speaker": next_speaker,
         "debate_round": round_num + 1,

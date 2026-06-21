@@ -14,3 +14,5 @@ logs/
 .vscode/
 reports/*.md
 !reports/.gitkeep
+*.db
+*.sqlite
