@@ -7,22 +7,7 @@ from agents.query.graph import query_agent_node
 from agents.insight.graph import insight_agent_node
 from agents.media.graph import media_agent_node
 from agents.report.graph import report_agent_node
-
-
-def _stub_agent(name: str):
-    """Stub until the real subgraph is wired in."""
-    def node(state: OverallState) -> dict:
-        directive = state.get("host_directive") or "(no directive)"
-        return {
-            "agent_results": [{
-                "agent_name": name,
-                "content": f"[stub {name}] received directive: {directive}",
-                "sources": [],
-                "confidence": 0.5,
-            }],
-            "total_tokens": 50,
-        }
-    return node
+from agents.devil_advocate.graph import devil_advocate_node
 
 
 def build_graph(checkpoint_path: str = "checkpoints.db"):
@@ -31,9 +16,9 @@ def build_graph(checkpoint_path: str = "checkpoints.db"):
     g.add_node("supervisor", supervisor_node)
     g.add_node("query", query_agent_node)
     g.add_node("insight", insight_agent_node)
-    g.add_node("media", media_agent_node)        # ← real now
-    g.add_node("devil_advocate", _stub_agent("devil_advocate"))  # ← still stub (Day 5)
-    g.add_node("report", report_agent_node)      # ← real now
+    g.add_node("media", media_agent_node)
+    g.add_node("devil_advocate", devil_advocate_node)  # ← real now
+    g.add_node("report", report_agent_node)
 
     g.add_edge(START, "supervisor")
     g.add_conditional_edges(
